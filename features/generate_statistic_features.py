@@ -67,8 +67,11 @@ def generate_tfidf_features(tfidf_vectorizer, df, question):
     TFIDF相关统计特征
     """
     def calc_tfidf(raw):
-        cq1_tfidf = np.sum(tfidf_vectorizer.transform([str(raw[question+'1'])]).data)
-        cq2_tfidf = np.sum(tfidf_vectorizer.transform([str(raw[question+'2'])]).data)
+        cq1_tfidf = tfidf_vectorizer.transform([str(raw[question+'1'])]).data
+        cq2_tfidf = tfidf_vectorizer.transform([str(raw[question+'2'])]).data
+        cq1_tfidf = [0.] if cq1_tfidf.shape[0] == 0 else cq1_tfidf
+        cq2_tfidf = [0.] if cq2_tfidf.shape[0] == 0 else cq2_tfidf
+
         return cq1_tfidf, cq2_tfidf
 
     df['tfidf'] = df.apply(lambda raw: calc_tfidf(raw), axis=1)
@@ -77,6 +80,12 @@ def generate_tfidf_features(tfidf_vectorizer, df, question):
     df['sum_'+question+'2_tfidf'] = df['tfidf'].map(lambda raw: np.sum(raw[1]))
     df['mean_'+question+'1_tfidf'] = df['tfidf'].map(lambda raw: np.mean(raw[0]))
     df['mean_'+question+'2_tfidf'] = df['tfidf'].map(lambda raw: np.mean(raw[1]))
+    df['var_'+question+'1_tfidf'] = df['tfidf'].map(lambda raw: np.var(raw[0]))
+    df['var_'+question+'2_tfidf'] = df['tfidf'].map(lambda raw: np.var(raw[1]))
+    df['std_'+question+'1_tfidf'] = df['tfidf'].map(lambda raw: np.std(raw[0]))
+    df['std_'+question+'2_tfidf'] = df['tfidf'].map(lambda raw: np.std(raw[1]))
+    df['len_'+question+'1_tfidf'] = df['tfidf'].map(lambda raw: len(raw[0]))
+    df['len_'+question+'2_tfidf'] = df['tfidf'].map(lambda raw: len(raw[1]))
 
     df.drop(['tfidf'], inplace=True, axis=1)
     return df
