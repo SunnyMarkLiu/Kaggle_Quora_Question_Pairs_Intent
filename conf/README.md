@@ -1,0 +1,2 @@
+# conf
+Global configuration
