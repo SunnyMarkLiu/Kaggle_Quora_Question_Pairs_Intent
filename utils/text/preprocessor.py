@@ -8,14 +8,16 @@
 from __future__ import absolute_import, division, print_function
 
 import re
-
 import acronyms_pattern as acronyms
 from nltk.tokenize import WordPunctTokenizer
 
 
 class TextPreProcessor(object):
-    def __init__(self):
-        pass
+    def __init__(self, spell_correct=False, spell_corpus_path=None):
+        self.spell_corrector = None
+        if spell_correct:
+            from spell_corrector import EnglishSpellCorrector
+            self.spell_corrector = EnglishSpellCorrector(spell_corpus_path)
 
     def __clean_unit(self, text):
         """
@@ -127,7 +129,11 @@ class TextPreProcessor(object):
         with open(filename, 'r') as f:
             return [line.rstrip('\n') for line in f.readlines()]
 
-    def clean_text(self, text, lower_case=True, filter_stopwords=True, keep_negative_words=False, own_stopwords_file=None):
+    def clean_text(self, text,
+                   lower_case=True,
+                   filter_stopwords=True,
+                   keep_negative_words=False,
+                   own_stopwords_file=None):
         """
         Clean text 
         :param text: the string of text
@@ -163,7 +169,13 @@ class TextPreProcessor(object):
             text = [word for word in word_tokenize(text) if word not in english_stopwords]
             text = ' '.join(text)
 
+        if self.spell_corrector:
+            text = self.spell_corrector.correct_sentences(text)
+
         return text
 
+
 if __name__ == "__main__":
-    print(TextPreProcessor().clean_text('What is the step by step guide to invest in machine learning?'))
+    preprocessor = TextPreProcessor(spell_correct=True,
+                                    spell_corpus_path='./spellcheck_wikipedia_cleaned_corpus.txt')
+    print(preprocessor.clean_text('teis is a simpl spel corrector'))
