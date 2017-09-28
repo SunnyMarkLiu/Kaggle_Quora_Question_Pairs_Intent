@@ -34,16 +34,19 @@ stop_words = ['the', 'a', 'an', 'and', 'but', 'if', 'or', 'because', 'as', 'what
               'during', 'to', 'What', 'Which', 'Is', 'If', 'While', 'This']
 
 
-def get_unigram_words(que):
+def get_unigram_words(que, base_data_dir):
     """
     获取单一有效词汇
     """
-    return [word for word in word_tokenize(que.lower()) if word not in english_stopwords]
+    if "no_stop_words" in base_data_dir:
+        return [word for word in word_tokenize(que.lower())]
+    else:
+        return [word for word in word_tokenize(que.lower()) if word not in english_stopwords]
 
 
-def generate_unigram_words_features(df):
-    df['unigrams_ques1'] = df['question1'].apply(lambda x: get_unigram_words(str(x)))
-    df['unigrams_ques2'] = df['question2'].apply(lambda x: get_unigram_words(str(x)))
+def generate_unigram_words_features(df, base_data_dir):
+    df['unigrams_ques1'] = df['question1'].apply(lambda x: get_unigram_words(str(x), base_data_dir))
+    df['unigrams_ques2'] = df['question2'].apply(lambda x: get_unigram_words(str(x), base_data_dir))
 
     def get_common_unigrams(row):
         """ 获取两个问题中包含相同词汇的数目 """
@@ -185,9 +188,9 @@ def clean_text(text, remove_stop_words=True, stem_words=False):
     return text
 
 
-def generate_cleaned_unigram_words_features(df):
-    df['cleaned_unigrams_ques1'] = df['cleaned_question1'].apply(lambda x: get_unigram_words(str(x)))
-    df['cleaned_unigrams_ques2'] = df['cleaned_question2'].apply(lambda x: get_unigram_words(str(x)))
+def generate_cleaned_unigram_words_features(df, base_data_dir):
+    df['cleaned_unigrams_ques1'] = df['cleaned_question1'].apply(lambda x: get_unigram_words(str(x), base_data_dir))
+    df['cleaned_unigrams_ques2'] = df['cleaned_question2'].apply(lambda x: get_unigram_words(str(x), base_data_dir))
 
     def get_common_unigrams(row):
         """ 获取两个问题中包含相同词汇的数目 """
@@ -225,8 +228,8 @@ def main(base_data_dir):
     test['num_of_words_q2'] = test['question2'].apply(lambda x: len(str(x).split()))
 
     print('---> generate unigram_words features before cleaned')
-    train = generate_unigram_words_features(train)
-    test = generate_unigram_words_features(test)
+    train = generate_unigram_words_features(train, base_data_dir)
+    test = generate_unigram_words_features(test, base_data_dir)
 
     print('---> clean text')
     start = time()
@@ -242,8 +245,8 @@ def main(base_data_dir):
     print("text cleaned, cost {}s".format(stop, str(stop - start)))
 
     print('---> generate unigram_words features after cleaned')
-    train = generate_cleaned_unigram_words_features(train)
-    test = generate_cleaned_unigram_words_features(test)
+    train = generate_cleaned_unigram_words_features(train, base_data_dir)
+    test = generate_cleaned_unigram_words_features(test, base_data_dir)
 
     print("train: {}, test: {}".format(train.shape, test.shape))
     print("---> save datasets")
