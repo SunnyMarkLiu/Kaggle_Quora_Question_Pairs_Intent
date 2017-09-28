@@ -172,6 +172,8 @@ class TextPreProcessor(object):
         if self.spell_corrector:
             text = self.spell_corrector.correct_sentences(text)
 
+            # using spelling_corrections.json to spell correct
+
         return text
 
 
