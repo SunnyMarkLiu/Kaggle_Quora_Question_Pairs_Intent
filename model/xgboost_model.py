@@ -51,9 +51,10 @@ def main():
     y_train = train['is_duplicate']
     del train['is_duplicate']
     print("train: {}, test: {}".format(train.shape, test.shape))
-    print('feature check before modeling...')
+    print('---> feature check before modeling')
     feature_util.feature_check_before_modeling(train, test, train.columns)
 
+    print("---> start cv training")
     X_train = train
     X_test = test
     df_columns = train.columns.values
@@ -84,17 +85,24 @@ def main():
     best_num_boost_rounds = len(cv_result)
     print('best_num_boost_rounds = {}'.format(best_num_boost_rounds))
     # train model
-    print('training on total training data...')
+    print('---> training on total training data')
     model = xgb.train(dict(xgb_params), dtrain,
                       num_boost_round=best_num_boost_rounds)
 
-    print('predict submit...')
+    print('---> predict submit')
     y_pred = model.predict(dtest)
-    y_pred = np.exp(y_pred)
     df_sub = pd.DataFrame({'test_id': id_test, 'is_duplicate': y_pred})
     submission_path = '../result/{}_submission_{}.csv.gz'.format('xgboost',
-                                                                 time.strftime('%Y_%m_%d_%H_%M_%S', time.localtime(time.time())))
+                                                                 time.strftime('%Y_%m_%d_%H_%M_%S',
+                                                                               time.localtime(time.time())))
     df_sub.to_csv(submission_path, index=False, compression='gzip')
+    print('---> submit to kaggle')
+    kg_password = raw_input("kaggle password: ")
+    kg_comment = raw_input("submit comment: ")
+    cmd = "kg submit {} -u sunnymarkliu -p '{}' -c quora-question-pairs -m '{}'".format(submission_path,
+                                                                                        kg_password,
+                                                                                        kg_comment)
+    os.system(cmd)
 
 
 if __name__ == "__main__":
