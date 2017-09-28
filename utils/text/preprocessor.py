@@ -7,19 +7,26 @@
 """
 from __future__ import absolute_import, division, print_function
 
+import os
 import re
-import acronyms_pattern as acronyms
+
 from nltk.tokenize import WordPunctTokenizer
+
+from . import acronyms_pattern as acronyms
+
+current_path = os.path.abspath(__file__)
+current_path = current_path[:-16]
 
 
 class TextPreProcessor(object):
-    def __init__(self, spell_correct=False, spell_corpus_path=None):
+    def __init__(self, spell_correct=False,
+                 spell_corpus_path=current_path+'/spellcheck_wikipedia_cleaned_corpus.txt'):
         self.spell_corrector = None
         if spell_correct:
-            from spell_corrector import EnglishSpellCorrector
+            from .spell_corrector import EnglishSpellCorrector
             self.spell_corrector = EnglishSpellCorrector(spell_corpus_path)
 
-    def __clean_unit(self, text):
+    def clean_unit(self, text):
         """
         单位文本的清洗
         :param text: the string of text
@@ -31,7 +38,7 @@ class TextPreProcessor(object):
         text = re.sub(r"(\d+)\$", lambda m: m.group(1) + ' dollar ', text)
         return text
 
-    def __clean_contractions(self, text):
+    def clean_contractions(self, text):
         """
         缩略词的清洗, 返回完整的词汇
         :return: 
@@ -41,14 +48,14 @@ class TextPreProcessor(object):
             text = re.sub(contraction, CON[contraction], text)
         return text
 
-    def __remove_link_text(self, text):
+    def remove_link_text(self, text):
         """
         去除链接
         """
         text = re.sub(r"(\S*)https?://\S*", lambda m: m.group(1), text)
         return text
 
-    def __translate_acronyms(self, text):
+    def translate_acronyms(self, text):
         """
         常用缩略语的翻译, 如 "US" ==> "United States"
         """
@@ -58,7 +65,7 @@ class TextPreProcessor(object):
             text = ac[0].sub(ac[1], text)
         return text
 
-    def __translate_emoji(self, text):
+    def translate_emoji(self, text):
         """
         表情 emoji 的翻译 ":‑)" ==> "feeling happy"
         """
@@ -67,7 +74,7 @@ class TextPreProcessor(object):
             text = text.replace(smy, ' ' + SMY[smy] + ' ')
         return text
 
-    def __translate_unicode(self, text):
+    def translate_unicode(self, text):
         """
         unicode 字符翻译, 如 u"\u2018" ==> "'"
         :param text: 
@@ -78,7 +85,7 @@ class TextPreProcessor(object):
             text = text.replace(u, UCD[u])
         return text
 
-    def __translate_punctuation(self, text):
+    def translate_punctuation(self, text):
         """
         标点符号的清洗
         """
@@ -87,7 +94,7 @@ class TextPreProcessor(object):
             text = text.replace(p, PUN[p])
         return text
 
-    def __translate_whitespace(self, text):
+    def translate_whitespace(self, text):
         """
         去除空白字符
         """
@@ -96,7 +103,7 @@ class TextPreProcessor(object):
             text = text.replace(w, WTS[w])
         return text
 
-    def __translate_shorthand(self, text):
+    def translate_shorthand(self, text):
         """
         翻译常用简写词, 如 "2day" ==> " today"
         """
@@ -105,7 +112,7 @@ class TextPreProcessor(object):
             text = text.replace(s, STH[s])
         return text
 
-    def __translate_numbers_simple(self, text):
+    def translate_numbers_simple(self, text):
         """
         数字的翻译, "1" ==> "one"
         """
@@ -114,7 +121,7 @@ class TextPreProcessor(object):
             text = text.replace(key, rep)
         return text
 
-    def __translate_ordinals(self, text):
+    def translate_ordinals(self, text):
         """
         顺序数字的翻译, 如 "1st" ==> "first"
         """
@@ -125,7 +132,7 @@ class TextPreProcessor(object):
             text = re.sub(" {0}$".format(key), " {0}".format(rep), text)
         return text
 
-    def __load_english_stopwords(self, filename):
+    def load_english_stopwords(self, filename):
         with open(filename, 'r') as f:
             return [line.rstrip('\n') for line in f.readlines()]
 
@@ -144,26 +151,26 @@ class TextPreProcessor(object):
         :return: text string after cleaning
         """
         # basic cleaning
-        text = self.__clean_unit(text)
-        text = self.__clean_contractions(text)
-        text = self.__remove_link_text(text)
-        text = self.__translate_acronyms(text)
-        text = self.__translate_emoji(text)
-        text = self.__translate_unicode(text)
-        text = self.__translate_punctuation(text)
-        text = self.__translate_whitespace(text)
-        text = self.__translate_shorthand(text)
-        text = self.__translate_ordinals(text)
+        text = self.clean_unit(text)
+        text = self.clean_contractions(text)
+        text = self.remove_link_text(text)
+        text = self.translate_acronyms(text)
+        text = self.translate_emoji(text)
+        text = self.translate_unicode(text)
+        text = self.translate_punctuation(text)
+        text = self.translate_whitespace(text)
+        text = self.translate_shorthand(text)
+        text = self.translate_ordinals(text)
 
         # clean space and filter stop words
         text = text.lower() if lower_case else text
         if filter_stopwords:
             if own_stopwords_file:
-                english_stopwords = self.__load_english_stopwords(own_stopwords_file)
-            elif keep_negative_words:
-                english_stopwords = self.__load_english_stopwords('./english_stopwords.vocab')
+                english_stopwords = self.load_english_stopwords(own_stopwords_file)
+            elif not keep_negative_words:
+                english_stopwords = self.load_english_stopwords(current_path+'/english_stopwords.vocab')
             else:
-                english_stopwords = self.__load_english_stopwords('./english_stopwords_no_negative_words.vocab')
+                english_stopwords = self.load_english_stopwords(current_path+'/english_stopwords_no_negative_words.vocab')
 
             word_tokenize = WordPunctTokenizer().tokenize
             text = [word for word in word_tokenize(text) if word not in english_stopwords]
@@ -179,5 +186,5 @@ class TextPreProcessor(object):
 
 if __name__ == "__main__":
     preprocessor = TextPreProcessor(spell_correct=True,
-                                    spell_corpus_path='./spellcheck_wikipedia_cleaned_corpus.txt')
+                                    spell_corpus_path=current_path+'/spellcheck_wikipedia_cleaned_corpus.txt')
     print(preprocessor.clean_text('teis is a simpl spel corrector'))
