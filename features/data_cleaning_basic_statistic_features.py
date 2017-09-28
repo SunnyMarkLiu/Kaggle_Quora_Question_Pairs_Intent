@@ -19,8 +19,12 @@ from string import punctuation
 from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
 from nltk.tokenize import WordPunctTokenizer
+
+from conf.configure import Configure
 from utils import data_utils
 from utils.text.preprocessor import TextPreProcessor
+
+from optparse import OptionParser
 
 english_stopwords = set(stopwords.words('english'))
 word_tokenize = WordPunctTokenizer().tokenize
@@ -201,10 +205,13 @@ def generate_cleaned_unigram_words_features(df):
     return df
 
 
-def main():
+def main(base_data_dir):
     op_scope = 0
+    if os.path.exists(Configure.processed_train_path.format(base_data_dir, op_scope+1)):
+        return
+
     print("---> load datasets from scope {}".format(op_scope))
-    train, test = data_utils.load_dataset(op_scope)
+    train, test = data_utils.load_dataset(base_data_dir, op_scope)
     print("train: {}, test: {}".format(train.shape, test.shape))
     print("---> generate basic statistic features")
     train['num_of_chars_q1'] = train['question1'].apply(lambda x: len(str(x)))
@@ -224,13 +231,13 @@ def main():
     print('---> clean text')
     start = time()
     print('clean train question1')
-    train['cleaned_question1'] = train['question1'].apply(lambda x: clean_text(str(x)))
+    train['cleaned_question1'] = train['question1'].apply(lambda x: clean_text(str(x), stem_words=True))
     print('clean train question2')
-    train['cleaned_question2'] = train['question2'].apply(lambda x: clean_text(str(x)))
+    train['cleaned_question2'] = train['question2'].apply(lambda x: clean_text(str(x), stem_words=True))
     print('clean test question1')
-    test['cleaned_question1'] = test['question1'].apply(lambda x: clean_text(str(x)))
+    test['cleaned_question1'] = test['question1'].apply(lambda x: clean_text(str(x), stem_words=True))
     print('clean test question2')
-    test['cleaned_question2'] = test['question2'].apply(lambda x: clean_text(str(x)))
+    test['cleaned_question2'] = test['question2'].apply(lambda x: clean_text(str(x), stem_words=True))
     stop = time()
     print("text cleaned, cost {}s".format(stop, str(stop - start)))
 
@@ -240,9 +247,23 @@ def main():
 
     print("train: {}, test: {}".format(train.shape, test.shape))
     print("---> save datasets")
-    data_utils.save_dataset(train, test, op_scope + 1)
+    data_utils.save_dataset(base_data_dir, train, test, op_scope + 1)
 
 
 if __name__ == "__main__":
+    parser = OptionParser()
+
+    parser.add_option(
+        "-d", "--base_data_dir",
+        dest="base_data_dir",
+        default="stop_words_and_stem_words",
+        help="""base dataset dir: 
+                    stop_words_and_stem_words, 
+                    stop_words_and_no_stem_words, 
+                    no_stop_words_and_stem_words, 
+                    no_stop_words_and_no_stem_words"""
+    )
+
+    options, _ = parser.parse_args()
     print("========== perform data cleaning and basic statistic feature engineering ==========")
-    main()
+    main(options.base_data_dir)

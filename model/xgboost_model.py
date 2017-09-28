@@ -18,13 +18,16 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 
+from optparse import OptionParser
 from utils import data_utils
+
+
 # from utils import feature_util
 
 
-def main():
+def main(base_data_dir):
     # final operate dataset
-    files = os.listdir('../input')
+    files = os.listdir('../input/' + base_data_dir)
     op_scope = 0
     for f in files:
         if 'operate' in f:
@@ -32,8 +35,8 @@ def main():
             if op > op_scope:
                 op_scope = op
 
-    print("---> load datasets from scope {}".format(op_scope))
-    train, test = data_utils.load_dataset(op_scope)
+    print("---> load datasets from {} scope {}".format(base_data_dir, op_scope))
+    train, test = data_utils.load_dataset(base_data_dir, op_scope)
 
     id_test = test['test_id']
 
@@ -94,9 +97,9 @@ def main():
     print('---> predict submit')
     y_pred = model.predict(dtest)
     df_sub = pd.DataFrame({'test_id': id_test, 'is_duplicate': y_pred})
-    submission_path = '../result/{}_submission_{}.csv.gz'.format('xgboost',
-                                                                 time.strftime('%Y_%m_%d_%H_%M_%S',
-                                                                               time.localtime(time.time())))
+    submission_path = '../result/{}_{}_submission_{}.csv.gz'.format(base_data_dir, 'xgboost',
+                                                                    time.strftime('%Y_%m_%d_%H_%M_%S',
+                                                                                  time.localtime(time.time())))
     df_sub.to_csv(submission_path, index=False, compression='gzip')
     print('---> submit to kaggle')
     kg_password = raw_input("kaggle password: ")
@@ -108,5 +111,19 @@ def main():
 
 
 if __name__ == "__main__":
+    parser = OptionParser()
+
+    parser.add_option(
+        "-d", "--base_data_dir",
+        dest="base_data_dir",
+        default="stop_words_and_stem_words",
+        help="""base dataset dir: 
+                    stop_words_and_stem_words, 
+                    stop_words_and_no_stem_words, 
+                    no_stop_words_and_stem_words, 
+                    no_stop_words_and_no_stem_words"""
+    )
+
+    options, _ = parser.parse_args()
     print("========== apply xgboost model ==========")
-    main()
+    main(options.base_data_dir)
