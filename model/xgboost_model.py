@@ -61,14 +61,8 @@ def main():
 
     xgb_params = {
         'eta': 0.01,
-        'min_child_weight': 1,
-        'reg_lambda': 0.006,
-        'reg_alpha': 0.0095,
-        'scale_pos_weight': 1,
-        'colsample_bytree': 1,
-        'subsample': 0.93,
-        'gamma': 0,
-        'max_depth': 14,
+        'subsample': 0.9,
+        'max_depth': 8,
         'objective': 'binary:logistic',
         'eval_metric': 'logloss',
         'updater': 'grow_gpu',
@@ -81,7 +75,7 @@ def main():
 
     cv_result = xgb.cv(dict(xgb_params),
                        dtrain,
-                       num_boost_round=1000,
+                       num_boost_round=400,
                        early_stopping_rounds=100,
                        verbose_eval=20,
                        show_stdv=False,
@@ -97,7 +91,7 @@ def main():
     print('predict submit...')
     y_pred = model.predict(dtest)
     y_pred = np.exp(y_pred)
-    df_sub = pd.DataFrame({'id': id_test, 'trip_duration': y_pred})
+    df_sub = pd.DataFrame({'test_id': id_test, 'is_duplicate': y_pred})
     submission_path = '../result/{}_submission_{}.csv.gz'.format('xgboost',
                                                                  time.strftime('%Y_%m_%d_%H_%M_%S', time.localtime(time.time())))
     df_sub.to_csv(submission_path, index=False, compression='gzip')
