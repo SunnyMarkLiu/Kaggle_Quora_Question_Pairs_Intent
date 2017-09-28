@@ -18,7 +18,8 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 
-from utils import data_utils, feature_util
+from utils import data_utils
+# from utils import feature_util
 
 
 def main():
@@ -34,11 +35,12 @@ def main():
     print("---> load datasets from scope {}".format(op_scope))
     train, test = data_utils.load_dataset(op_scope)
 
-    id_train = train['id']
     id_test = test['test_id']
 
-    train.drop(['id', 'qid1', 'qid2', 'question1', 'question2'], axis=1, inplace=True)
-    test.drop(['test_id', 'question1', 'question2'], axis=1, inplace=True)
+    train.drop(['id', 'qid1', 'qid2', 'question1', 'question2', 'cleaned_question1', 'cleaned_question2'],
+               axis=1, inplace=True)
+    test.drop(['test_id', 'question1', 'question2', 'cleaned_question1', 'cleaned_question2'],
+              axis=1, inplace=True)
 
     shuffled_index = np.arange(0, train.shape[0], 1)
     np.random.shuffle(shuffled_index)
@@ -52,7 +54,7 @@ def main():
     del train['is_duplicate']
     print("train: {}, test: {}".format(train.shape, test.shape))
     print('---> feature check before modeling')
-    feature_util.feature_check_before_modeling(train, test, train.columns)
+    # feature_util.feature_check_before_modeling(train, test, train.columns)
 
     print("---> start cv training")
     X_train = train
