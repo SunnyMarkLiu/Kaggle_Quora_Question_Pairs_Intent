@@ -256,14 +256,19 @@ def main(base_data_dir):
 
     print('---> clean text')
     start = time()
+    if 'no_stem_words' in base_data_dir:
+        stem_words = False
+    else:
+        stem_words = True
+
     print('clean train question1')
-    train['cleaned_question1'] = train['question1'].apply(lambda x: clean_text(str(x), stem_words=True))
+    train['cleaned_question1'] = train['question1'].apply(lambda x: clean_text(str(x), stem_words=stem_words))
     print('clean train question2')
-    train['cleaned_question2'] = train['question2'].apply(lambda x: clean_text(str(x), stem_words=True))
+    train['cleaned_question2'] = train['question2'].apply(lambda x: clean_text(str(x), stem_words=stem_words))
     print('clean test question1')
-    test['cleaned_question1'] = test['question1'].apply(lambda x: clean_text(str(x), stem_words=True))
+    test['cleaned_question1'] = test['question1'].apply(lambda x: clean_text(str(x), stem_words=stem_words))
     print('clean test question2')
-    test['cleaned_question2'] = test['question2'].apply(lambda x: clean_text(str(x), stem_words=True))
+    test['cleaned_question2'] = test['question2'].apply(lambda x: clean_text(str(x), stem_words=stem_words))
     stop = time()
     print("text cleaned, cost {}s".format(stop, str(stop - start)))
 

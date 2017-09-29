@@ -26,10 +26,10 @@ def generate_contain_word_features(df, word):
     df[word + "_count_cq1"] = df['cleaned_question1'].apply(lambda x: str(x.strip()).split().count(word))
     df[word + "_count_cq2"] = df['cleaned_question2'].apply(lambda x: str(x.strip()).split().count(word))
 
-    df[word + "_cq1_ca2_both_gt_0"] = df.apply(lambda raw: (raw[word + "_count_cq1"] > 0) & (raw[word + "_count_cq2"] > 0))
-    df[word + "_cq1_ca2_one_gt_0"] = df.apply(lambda raw: (raw[word + "_count_cq1"] > 0) | (raw[word + "_count_cq2"] > 0))
-    df[word + "_cq1_ca2_diff"] = df.apply(lambda raw: ((raw[word + "_count_cq1"] > 0) & (raw[word + "_count_cq2"] <= 0)) |
-                                                      ((raw[word + "_count_cq1"] <= 0) & (raw[word + "_count_cq2"] > 0)))
+    df[word + "_cq1_ca2_both_gt_0"] = df.apply(lambda raw: ((raw[word + "_count_cq1"] > 0) & (raw[word + "_count_cq2"] > 0)), axis=1)
+    df[word + "_cq1_ca2_one_gt_0"] = df.apply(lambda raw: ((raw[word + "_count_cq1"] > 0) | (raw[word + "_count_cq2"] > 0)), axis=1)
+    df[word + "_cq1_ca2_diff"] = df.apply(lambda raw: (((raw[word + "_count_cq1"] > 0) & (raw[word + "_count_cq2"] <= 0)) |
+                                                      ((raw[word + "_count_cq1"] <= 0) & (raw[word + "_count_cq2"] > 0))), axis=1)
 
 def main(base_data_dir):
     op_scope = 1
@@ -40,9 +40,9 @@ def main(base_data_dir):
     train, test = data_utils.load_dataset(base_data_dir, op_scope)
     print("train: {}, test: {}".format(train.shape, test.shape))
 
-    print('---> generate contain_word count features')
-    generate_contain_word_features(train, 'not')
-    generate_contain_word_features(test, 'not')
+    # print('---> generate contain_word count features')
+    # generate_contain_word_features(train, 'not')
+    # generate_contain_word_features(test, 'not')
 
     print("train: {}, test: {}".format(train.shape, test.shape))
     print("---> save datasets")
@@ -55,12 +55,10 @@ if __name__ == "__main__":
     parser.add_option(
         "-d", "--base_data_dir",
         dest="base_data_dir",
-        default="stop_words_and_stem_words",
+        default="perform_stem_words",
         help="""base dataset dir: 
-                    stop_words_and_stem_words, 
-                    stop_words_and_no_stem_words, 
-                    no_stop_words_and_stem_words, 
-                    no_stop_words_and_no_stem_words"""
+                    perform_stem_words, 
+                    perform_no_stem_words"""
     )
 
     options, _ = parser.parse_args()
