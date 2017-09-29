@@ -72,7 +72,7 @@ def main(base_data_dir):
         'objective': 'binary:logistic',
         'eval_metric': 'logloss',
         'updater': 'grow_gpu',
-        'gpu_id': 1,
+        'gpu_id': 2,
         'nthread': -1,
         'silent': 1
     }

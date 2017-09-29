@@ -15,7 +15,7 @@ sys.path.append(module_path)
 
 import numpy as np
 import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, HashingVectorizer
 from utils import data_utils
 
 from optparse import OptionParser
@@ -76,6 +76,10 @@ def generate_tfidf_features(tfidf_vectorizer, df, question):
 
     df['tfidf'] = df.apply(lambda raw: calc_tfidf(raw), axis=1)
 
+    df['max_' + question + '1_tfidf'] = df['tfidf'].map(lambda raw: np.max(raw[0]))
+    df['max_' + question + '2_tfidf'] = df['tfidf'].map(lambda raw: np.max(raw[1]))
+    df['min_' + question + '1_tfidf'] = df['tfidf'].map(lambda raw: np.min(raw[0]))
+    df['min_' + question + '2_tfidf'] = df['tfidf'].map(lambda raw: np.min(raw[1]))
     df['sum_'+question+'1_tfidf'] = df['tfidf'].map(lambda raw: np.sum(raw[0]))
     df['sum_'+question+'2_tfidf'] = df['tfidf'].map(lambda raw: np.sum(raw[1]))
     df['mean_'+question+'1_tfidf'] = df['tfidf'].map(lambda raw: np.mean(raw[0]))
@@ -88,6 +92,48 @@ def generate_tfidf_features(tfidf_vectorizer, df, question):
     df['len_'+question+'2_tfidf'] = df['tfidf'].map(lambda raw: len(raw[1]))
 
     df.drop(['tfidf'], inplace=True, axis=1)
+    return df
+
+
+def train_hash_vectorizer(train, test, question):
+    hash_vectorizer = HashingVectorizer(ngram_range=(1, 1))
+    tfidf_txt = pd.Series(
+                train[question+'1'].tolist() + train[question+'2'].tolist() +
+                test[question+'1'].tolist() + test[question+'2'].tolist()).astype(str)
+    hash_vectorizer.fit(tfidf_txt)
+    return hash_vectorizer
+
+
+def generate_hash_features(hash_vectorizer, df, question):
+    """
+    hash 相关统计特征
+    """
+    def calc_hash(raw):
+        cq1_hash = hash_vectorizer.transform([str(raw[question+'1'])]).data
+        cq2_hash = hash_vectorizer.transform([str(raw[question+'2'])]).data
+        cq1_hash = [0.] if cq1_hash.shape[0] == 0 else cq1_hash
+        cq2_hash = [0.] if cq2_hash.shape[0] == 0 else cq2_hash
+
+        return cq1_hash, cq2_hash
+
+    df['hash'] = df.apply(lambda raw: calc_hash(raw), axis=1)
+
+    df['max_' + question + '1_hash'] = df['hash'].map(lambda raw: np.max(raw[0]))
+    df['max_' + question + '2_hash'] = df['hash'].map(lambda raw: np.max(raw[1]))
+    df['min_' + question + '1_hash'] = df['hash'].map(lambda raw: np.min(raw[0]))
+    df['min_' + question + '2_hash'] = df['hash'].map(lambda raw: np.min(raw[1]))
+    df['sum_'+question+'1_hash'] = df['hash'].map(lambda raw: np.sum(raw[0]))
+    df['sum_'+question+'2_hash'] = df['hash'].map(lambda raw: np.sum(raw[1]))
+    df['mean_'+question+'1_hash'] = df['hash'].map(lambda raw: np.mean(raw[0]))
+    df['mean_'+question+'2_hash'] = df['hash'].map(lambda raw: np.mean(raw[1]))
+    df['var_'+question+'1_hash'] = df['hash'].map(lambda raw: np.var(raw[0]))
+    df['var_'+question+'2_hash'] = df['hash'].map(lambda raw: np.var(raw[1]))
+    df['std_'+question+'1_hash'] = df['hash'].map(lambda raw: np.std(raw[0]))
+    df['std_'+question+'2_hash'] = df['hash'].map(lambda raw: np.std(raw[1]))
+    df['len_'+question+'1_hash'] = df['hash'].map(lambda raw: len(raw[0]))
+    df['len_'+question+'2_hash'] = df['hash'].map(lambda raw: len(raw[1]))
+
+    df.drop(['hash'], inplace=True, axis=1)
     return df
 
 
@@ -123,6 +169,18 @@ def main(base_data_dir):
     print('---> generate question tfidf features')
     train = generate_tfidf_features(tfidf_vectorizer, train, question='question')
     test = generate_tfidf_features(tfidf_vectorizer, test, question='question')
+
+    print('---> calc question hash object')
+    hash_vectorizer = train_hash_vectorizer(train, test, question='question')
+    print('---> generate question hash features')
+    train = generate_hash_features(hash_vectorizer, train, question='question')
+    test = generate_hash_features(hash_vectorizer, test, question='question')
+
+    print('---> calc cleaned_question hash object')
+    hash_vectorizer = train_hash_vectorizer(train, test, question='cleaned_question')
+    print('---> generate cleaned_question hash features')
+    train = generate_hash_features(hash_vectorizer, train, question='cleaned_question')
+    test = generate_hash_features(hash_vectorizer, test, question='cleaned_question')
 
     print("train: {}, test: {}".format(train.shape, test.shape))
     print("---> save datasets")
