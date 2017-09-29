@@ -45,13 +45,13 @@ def main(base_data_dir):
     test.drop(['test_id', 'question1', 'question2', 'cleaned_question1', 'cleaned_question2'],
               axis=1, inplace=True)
 
-    shuffled_index = np.arange(0, train.shape[0], 1)
-    np.random.shuffle(shuffled_index)
+    # shuffled_index = np.arange(0, train.shape[0], 1)
+    # np.random.shuffle(shuffled_index)
 
     # random_indexs = shuffled_index[:int(train.shape[0] * 0.70)]
-    random_indexs = shuffled_index
+    # random_indexs = shuffled_index
     # random_indexs = np.arange(0, train.shape[0], 2)
-    train = train.iloc[random_indexs, :]
+    # train = train.iloc[random_indexs, :]
 
     y_train = train['is_duplicate']
     del train['is_duplicate']
