@@ -119,7 +119,9 @@ if __name__ == "__main__":
         default="perform_stem_words",
         help="""base dataset dir: 
                     perform_stem_words, 
-                    perform_no_stem_words"""
+                    perform_no_stem_words,
+                    full_data_perform_stem_words,
+                    full_data_perform_no_stem_words"""
     )
 
 
