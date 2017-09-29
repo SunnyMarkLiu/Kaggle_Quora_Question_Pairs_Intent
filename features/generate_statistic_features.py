@@ -137,6 +137,33 @@ def generate_hash_features(hash_vectorizer, df, question):
     return df
 
 
+def generate_question_occur_count(train, test):
+    """
+    问题在数据集中出现的次数
+    """
+    q_num = {}
+    for index, raw in train.iterrows():
+        q1 = str(raw['cleaned_question1']).strip()
+        q2 = str(raw['cleaned_question2']).strip()
+        q_num[q1] = q_num.get(q1, 0) + 1
+        if q1 != q2:
+            q_num[q2] = q_num.get(q2, 0) + 1
+
+    for index, raw in test.iterrows():
+        q1 = str(raw['cleaned_question1']).strip()
+        q2 = str(raw['cleaned_question2']).strip()
+        q_num[q1] = q_num.get(q1, 0) + 1
+        if q1 != q2:
+            q_num[q2] = q_num.get(q2, 0) + 1
+
+    train['cleaned_question1_occur_count'] = train['cleaned_question1'].map(q_num)
+    train['cleaned_question2_occur_count'] = train['cleaned_question2'].map(q_num)
+    test['cleaned_question1_occur_count'] = test['cleaned_question1'].map(q_num)
+    test['cleaned_question2_occur_count'] = test['cleaned_question2'].map(q_num)
+
+    return train, test
+
+
 def main(base_data_dir):
     op_scope = 1
     # if os.path.exists(Configure.processed_train_path.format(base_data_dir, op_scope + 1)):
@@ -181,6 +208,9 @@ def main(base_data_dir):
     print('---> generate cleaned_question hash features')
     train = generate_hash_features(hash_vectorizer, train, question='cleaned_question')
     test = generate_hash_features(hash_vectorizer, test, question='cleaned_question')
+
+    print('---> generate question occurs count')
+    train, test = generate_question_occur_count(train, test)
 
     print("train: {}, test: {}".format(train.shape, test.shape))
     print("---> save datasets")
