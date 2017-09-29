@@ -16,7 +16,7 @@ sys.path.append(module_path)
 from time import time
 import re
 from string import punctuation
-from nltk.corpus import stopwords
+# from nltk.corpus import stopwords
 from nltk.stem import SnowballStemmer
 from nltk.tokenize import WordPunctTokenizer
 
@@ -26,7 +26,7 @@ from utils.text.preprocessor import TextPreProcessor
 
 from optparse import OptionParser
 
-english_stopwords = set(stopwords.words('english'))
+# english_stopwords = set(stopwords.words('english'))
 word_tokenize = WordPunctTokenizer().tokenize
 preprocessor = TextPreProcessor()
 stop_words = ['the', 'a', 'an', 'and', 'but', 'if', 'or', 'because', 'as', 'what', 'which', 'this', 'that', 'these',
@@ -34,19 +34,16 @@ stop_words = ['the', 'a', 'an', 'and', 'but', 'if', 'or', 'because', 'as', 'what
               'during', 'to', 'What', 'Which', 'Is', 'If', 'While', 'This']
 
 
-def get_unigram_words(que, base_data_dir):
+def get_unigram_words(que):
     """
     获取单一有效词汇
     """
-    if "no_stop_words" in base_data_dir:
-        return [word for word in word_tokenize(que.lower())]
-    else:
-        return [word for word in word_tokenize(que.lower()) if word not in english_stopwords]
+    return [word for word in word_tokenize(que.lower()) if word not in stop_words]
 
 
-def generate_unigram_words_features(df, base_data_dir):
-    df['unigrams_ques1'] = df['question1'].apply(lambda x: get_unigram_words(str(x), base_data_dir))
-    df['unigrams_ques2'] = df['question2'].apply(lambda x: get_unigram_words(str(x), base_data_dir))
+def generate_unigram_words_features(df):
+    df['unigrams_ques1'] = df['question1'].apply(lambda x: get_unigram_words(str(x)))
+    df['unigrams_ques2'] = df['question2'].apply(lambda x: get_unigram_words(str(x)))
 
     def get_common_unigrams(row):
         """ 获取两个问题中包含相同词汇的数目 """
@@ -89,7 +86,7 @@ def clean_text(text, remove_stop_words=True, stem_words=False):
     text = re.sub(r"ma'am", "madam", text)
     text = re.sub(r"o'clock", "of the clock", text)
     text = re.sub(r"y'all", "you all", text)
-    # 去除超链接
+    # remove hyper link
     text = re.sub(r"(\S*)https?://\S*", lambda m: m.group(1), text)
 
     text = re.sub(r"[^A-Za-z0-9]", " ", text)
@@ -113,32 +110,52 @@ def clean_text(text, remove_stop_words=True, stem_words=False):
     text = re.sub(r"demonitization", "demonetization", text)
     text = re.sub(r"actived", "active", text)
     text = re.sub(r"kms", " kilometers ", text)
-    text = re.sub(r"KMs", " kilometers ", text)
     text = re.sub(r" cs ", " computer science ", text)
     text = re.sub(r" upvotes ", " up votes ", text)
-    text = re.sub(r" iPhone ", " phone ", text)
     text = re.sub(r"\0rs ", " rs ", text)
     text = re.sub(r"calender", "calendar", text)
-    text = re.sub(r"ios", "operating system", text)
+    text = re.sub(r"ios", " ios operating system", text)
     text = re.sub(r"gps", "GPS", text)
     text = re.sub(r"gst", "GST", text)
     text = re.sub(r"programing", "programming", text)
     text = re.sub(r"bestfriend", "best friend", text)
     text = re.sub(r"dna", "DNA", text)
     text = re.sub(r"iii", "3", text)
-    text = re.sub(r"the US", "America", text)
-    text = re.sub(r"Astrology", "astrology", text)
-    text = re.sub(r"Method", "method", text)
-    text = re.sub(r"Find", "find", text)
+    text = re.sub(r"the us", "America", text)
     text = re.sub(r"banglore", "Banglore", text)
-    text = re.sub(r" J K ", " JK ", text)
+    text = re.sub(r" j k ", " JK ", text)
+    text = re.sub(r"ph\.d", "phd", text)
+    text = re.sub(r"pokemons", "pokemon", text)
+    text = re.sub(r"pokémon", "pokemon", text)
+    text = re.sub(r"pokemon go ", "pokemon-go ", text)
+    text = re.sub(r" fb ", " facebook ", text)
+    text = re.sub(r"facebooks", " facebook ", text)
+    text = re.sub(r"facebooking", " facebook ", text)
+    text = re.sub(r"insidefacebook", "inside facebook", text)
+    text = re.sub(r"donald trump", "trump", text)
+    text = re.sub(r"the big bang", "big-bang", text)
+    text = re.sub(r" quaro ", " quora ", text)
+    text = re.sub(r" mbp ", " macbook-pro ", text)
+    text = re.sub(r" mac ", " macbook ", text)
+    text = re.sub(r"macbook pro", "macbook-pro", text)
+    text = re.sub(r"macbook-pros", "macbook-pro", text)
+    text = re.sub(r"googling", " google ", text)
+    text = re.sub(r"googled", " google ", text)
+    text = re.sub(r"googleable", " google ", text)
+    text = re.sub(r"googles", " google ", text)
+    text = re.sub(r" rs(\d+)", lambda m: ' rs ' + m.group(1), text)
+    text = re.sub(r"(\d+)rs", lambda m: ' rs ' + m.group(1), text)
+    text = re.sub(r"the european union", " eu ", text)
+    text = re.sub(r"dollars", " dollar ", text)
 
+    # units translate
     text = re.sub(r"(\d+)kgs\s*", lambda m: m.group(1) + ' kilogram ', text)  # e.g. 4kgs => 4 kg
     text = re.sub(r"(\d+)kg\s*", lambda m: m.group(1) + ' kilogram ', text)  # e.g. 4kg => 4 kg
     text = re.sub(r"(\d+)k\s*", lambda m: m.group(1) + '000 ', text)  # e.g. 4k => 4000
     text = re.sub(r"\$(\d+)", lambda m: m.group(1) + ' dollar ', text)
     text = re.sub(r"(\d+)\$", lambda m: m.group(1) + ' dollar ', text)
 
+    # number translate
     text = re.sub(r"1st", " first ", text)
     text = re.sub(r"2nd", " second ", text)
     text = re.sub(r"3rd", " third ", text)
@@ -149,7 +166,6 @@ def clean_text(text, remove_stop_words=True, stem_words=False):
     text = re.sub(r"8th", " eighth ", text)
     text = re.sub(r"9th", " ninth ", text)
     text = re.sub(r"10th", " tenth ", text)
-
     text = re.sub(r"0", " zero ", text)
     text = re.sub(r"1", " one ", text)
     text = re.sub(r"2", " two ", text)
@@ -161,6 +177,13 @@ def clean_text(text, remove_stop_words=True, stem_words=False):
     text = re.sub(r"8", " eight ", text)
     text = re.sub(r"9", " nine ", text)
 
+    # symbol replacement
+    text = re.sub(r"&", " and ", text)
+    text = re.sub(r"\|", " or ", text)
+    text = re.sub(r"=", " equal ", text)
+    text = re.sub(r"\+", " plus ", text)
+    text = re.sub(r"₹", " rs ", text)  # 测试！
+    text = re.sub(r"\$", " dollar ", text)
     text = re.sub(r"&amp", " and ", text)
     text = re.sub(r"&quot", ' " ', text)
     text = re.sub(r"&lt", " less than ", text)
@@ -188,9 +211,9 @@ def clean_text(text, remove_stop_words=True, stem_words=False):
     return text
 
 
-def generate_cleaned_unigram_words_features(df, base_data_dir):
-    df['cleaned_unigrams_ques1'] = df['cleaned_question1'].apply(lambda x: get_unigram_words(str(x), base_data_dir))
-    df['cleaned_unigrams_ques2'] = df['cleaned_question2'].apply(lambda x: get_unigram_words(str(x), base_data_dir))
+def generate_cleaned_unigram_words_features(df):
+    df['cleaned_unigrams_ques1'] = df['cleaned_question1'].apply(lambda x: get_unigram_words(str(x)))
+    df['cleaned_unigrams_ques2'] = df['cleaned_question2'].apply(lambda x: get_unigram_words(str(x)))
 
     def get_common_unigrams(row):
         """ 获取两个问题中包含相同词汇的数目 """
@@ -228,8 +251,8 @@ def main(base_data_dir):
     test['num_of_words_q2'] = test['question2'].apply(lambda x: len(str(x).split()))
 
     print('---> generate unigram_words features before cleaned')
-    train = generate_unigram_words_features(train, base_data_dir)
-    test = generate_unigram_words_features(test, base_data_dir)
+    train = generate_unigram_words_features(train)
+    test = generate_unigram_words_features(test)
 
     print('---> clean text')
     start = time()
@@ -245,8 +268,8 @@ def main(base_data_dir):
     print("text cleaned, cost {}s".format(stop, str(stop - start)))
 
     print('---> generate unigram_words features after cleaned')
-    train = generate_cleaned_unigram_words_features(train, base_data_dir)
-    test = generate_cleaned_unigram_words_features(test, base_data_dir)
+    train = generate_cleaned_unigram_words_features(train)
+    test = generate_cleaned_unigram_words_features(test)
 
     print("train: {}, test: {}".format(train.shape, test.shape))
     print("---> save datasets")
@@ -259,12 +282,10 @@ if __name__ == "__main__":
     parser.add_option(
         "-d", "--base_data_dir",
         dest="base_data_dir",
-        default="stop_words_and_stem_words",
+        default="perform_stem_words",
         help="""base dataset dir: 
-                    stop_words_and_stem_words, 
-                    stop_words_and_no_stem_words, 
-                    no_stop_words_and_stem_words, 
-                    no_stop_words_and_no_stem_words"""
+                    perform_stem_words, 
+                    perform_no_stem_words"""
     )
 
     options, _ = parser.parse_args()

@@ -116,13 +116,12 @@ if __name__ == "__main__":
     parser.add_option(
         "-d", "--base_data_dir",
         dest="base_data_dir",
-        default="stop_words_and_stem_words",
+        default="perform_stem_words",
         help="""base dataset dir: 
-                    stop_words_and_stem_words, 
-                    stop_words_and_no_stem_words, 
-                    no_stop_words_and_stem_words, 
-                    no_stop_words_and_no_stem_words"""
+                    perform_stem_words, 
+                    perform_no_stem_words"""
     )
+
 
     options, _ = parser.parse_args()
     print("========== apply xgboost model ==========")

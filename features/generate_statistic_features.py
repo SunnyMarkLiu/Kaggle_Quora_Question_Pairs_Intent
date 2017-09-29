@@ -19,6 +19,18 @@ from utils import data_utils
 from optparse import OptionParser
 
 
+def generate_contain_word_features(df, word):
+    """
+    是否包含特定的单词, 如 not
+    """
+    df[word + "_count_cq1"] = df['cleaned_question1'].apply(lambda x: str(x.strip()).split().count(word))
+    df[word + "_count_cq2"] = df['cleaned_question2'].apply(lambda x: str(x.strip()).split().count(word))
+
+    df[word + "_cq1_ca2_both_gt_0"] = df.apply(lambda raw: (raw[word + "_count_cq1"] > 0) & (raw[word + "_count_cq2"] > 0))
+    df[word + "_cq1_ca2_one_gt_0"] = df.apply(lambda raw: (raw[word + "_count_cq1"] > 0) | (raw[word + "_count_cq2"] > 0))
+    df[word + "_cq1_ca2_diff"] = df.apply(lambda raw: ((raw[word + "_count_cq1"] > 0) & (raw[word + "_count_cq2"] <= 0)) |
+                                                      ((raw[word + "_count_cq1"] <= 0) & (raw[word + "_count_cq2"] > 0)))
+
 def main(base_data_dir):
     op_scope = 1
     if os.path.exists(Configure.processed_train_path.format(base_data_dir, op_scope + 1)):
@@ -27,6 +39,10 @@ def main(base_data_dir):
     print("---> load datasets from scope {}".format(op_scope))
     train, test = data_utils.load_dataset(base_data_dir, op_scope)
     print("train: {}, test: {}".format(train.shape, test.shape))
+
+    print('---> generate contain_word count features')
+    generate_contain_word_features(train, 'not')
+    generate_contain_word_features(test, 'not')
 
     print("train: {}, test: {}".format(train.shape, test.shape))
     print("---> save datasets")

@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 
 # base dataset direction:
-# -> stop_words_and_stem_words,
-# -> stop_words_and_no_stem_words,
-# -> no_stop_words_and_stem_words,
-# -> no_stop_words_and_no_stem_words
+# -> perform_stem_words,
+# -> perform_no_stem_words
 
-base_data_dir='stop_words_and_stem_words'
+base_data_dir='perform_stem_words'
 echo "==> base_data_dir:" ${base_data_dir}
 
 cd features
