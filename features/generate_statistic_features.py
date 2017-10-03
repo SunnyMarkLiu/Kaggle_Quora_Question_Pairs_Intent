@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer, HashingVectorizer
 from utils import data_utils
-
+from conf.configure import Configure
 from optparse import OptionParser
 
 
@@ -166,8 +166,8 @@ def generate_question_occur_count(train, test):
 
 def main(base_data_dir):
     op_scope = 1
-    # if os.path.exists(Configure.processed_train_path.format(base_data_dir, op_scope + 1)):
-    #     return
+    if os.path.exists(Configure.processed_train_path.format(base_data_dir, op_scope + 1)):
+        return
 
     print("---> load datasets from scope {}".format(op_scope))
     train, test = data_utils.load_dataset(base_data_dir, op_scope)
