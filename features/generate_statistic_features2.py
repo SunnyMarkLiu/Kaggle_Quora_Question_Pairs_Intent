@@ -47,13 +47,17 @@ def generate_question_introducer_word_features(df):
 
     return df
 
-def generate_question_symbol_count(df):
+
+def generate_symbol_count(df):
     """
     ? 的数量, 代表一个 question 中包含的问题数目
     """
     df['q1_?_nums'] = df['question1'].map(lambda x: str(x).count('?'))
     df['q2_?_nums'] = df['question2'].map(lambda x: str(x).count('?'))
     df['same_?_num'] = df.apply(lambda raw: int(raw['q1_?_nums'] == raw['q2_?_nums']), axis=1)
+
+    df['q1_math_count'] = df['question1'].map(lambda x: str(x).count('math'))
+    df['q2_math_count'] = df['question2'].map(lambda x: str(x).count('math'))
 
 
 def main(base_data_dir):
@@ -68,8 +72,8 @@ def main(base_data_dir):
     train = generate_question_introducer_word_features(train)
     test = generate_question_introducer_word_features(test)
 
-    generate_question_symbol_count(train)
-    generate_question_symbol_count(test)
+    generate_symbol_count(train)
+    generate_symbol_count(test)
 
     print("train: {}, test: {}".format(train.shape, test.shape))
     print("---> save datasets")
