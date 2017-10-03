@@ -13,6 +13,7 @@ import sys
 module_path = os.path.abspath(os.path.join('..'))
 sys.path.append(module_path)
 
+import numpy as np
 from utils import data_utils
 from conf.configure import Configure
 from optparse import OptionParser
@@ -59,6 +60,49 @@ def generate_symbol_count(df):
     df['q1_math_count'] = df['question1'].map(lambda x: str(x).count('math'))
     df['q2_math_count'] = df['question2'].map(lambda x: str(x).count('math'))
 
+def generate_char_count(df):
+    """
+    字符出现的次数
+    """
+    s = 'abcdefghijklmnopqrstuvwxyz'
+    def calc_char_count(row):
+        q1 = str(row['question1']).strip().lower()
+        q2 = str(row['question2']).strip().lower()
+        fs1 = [0] * 26
+        fs2 = [0] * 26
+        for index in range(len(q1)):
+            c = q1[index]
+            if 0 <= s.find(c):
+                fs1[s.find(c)] += 1
+        for index in range(len(q2)):
+            c = q2[index]
+            if 0 <= s.find(c):
+                fs2[s.find(c)] += 1
+        return fs1, fs2, list(abs(np.array(fs1) - np.array(fs2)))
+
+    df['char_counts'] = df.apply(lambda row: calc_char_count(row), axis=1)
+    df['q1_char_count'] = df['char_counts'].map(lambda x: x[0])
+    df['q2_char_count'] = df['char_counts'].map(lambda x: x[1])
+    df['char_count_diff'] = df['char_counts'].map(lambda x: x[2])
+
+    df['max_q1_char_count'] = df['q1_char_count'].map(lambda x: np.max(x))
+    df['min_q1_char_count'] = df['q1_char_count'].map(lambda x: np.min(x))
+    df['mean_q1_char_count'] = df['q1_char_count'].map(lambda x: np.mean(x))
+
+    df['max_q2_char_count'] = df['q2_char_count'].map(lambda x: np.max(x))
+    df['min_q2_char_count'] = df['q2_char_count'].map(lambda x: np.min(x))
+    df['mean_q2_char_count'] = df['q2_char_count'].map(lambda x: np.mean(x))
+
+    df['max_char_count_diff'] = df['char_count_diff'].map(lambda x: np.max(x))
+    df['min_char_count_diff'] = df['char_count_diff'].map(lambda x: np.min(x))
+    df['mean_char_count_diff'] = df['char_count_diff'].map(lambda x: np.mean(x))
+
+    for i in range(26):
+        df['q1_char_{}_count'.format(s[i])] = df['q1_char_count'].map(lambda x: x[i])
+        df['q2_char_{}_count'.format(s[i])] = df['q2_char_count'].map(lambda x: x[i])
+        df['char_{}_count'.format(s[i])] = df['char_count_diff'].map(lambda x: x[i])
+
+    df.drop(['char_counts', 'q1_char_count', 'q2_char_count', 'char_count_diff'], axis=1, inplace=True)
 
 def main(base_data_dir):
     op_scope = 2
@@ -69,11 +113,17 @@ def main(base_data_dir):
     train, test = data_utils.load_dataset(base_data_dir, op_scope)
     print("train: {}, test: {}".format(train.shape, test.shape))
 
+    print('---> generate question introducer word features')
     train = generate_question_introducer_word_features(train)
     test = generate_question_introducer_word_features(test)
 
+    print('---> generate symbol features')
     generate_symbol_count(train)
     generate_symbol_count(test)
+
+    print('---> generate char count features')
+    generate_char_count(train)
+    generate_char_count(test)
 
     print("train: {}, test: {}".format(train.shape, test.shape))
     print("---> save datasets")
