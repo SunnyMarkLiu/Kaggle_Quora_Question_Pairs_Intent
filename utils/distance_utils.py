@@ -12,6 +12,8 @@ import sys
 
 module_path = os.path.abspath(os.path.join('..'))
 sys.path.append(module_path)
+from fuzzywuzzy import fuzz
+
 
 class DistanceUtil(object):
 
@@ -67,3 +69,22 @@ class DistanceUtil(object):
                     distances_.append(1 + min((distances[i1], distances[i1 + 1], distances_[-1])))
             distances = distances_
         return distances[-1]
+
+    @staticmethod
+    def fuzzy_matching_ratio(str1, str2, ratio_func='partial_ratio'):
+        """
+        字符串模糊匹配
+        :param str1: 字符串
+        :param str2: 字符串
+        :param ratio_func: ratio, partial_ratio, token_sort_ratio, token_set_ratio
+        :return: 
+        """
+        if ratio_func == 'ratio':
+            # Normalize to [0 - 1] range.
+            return fuzz.ratio(str1, str2) / 100.0
+        if ratio_func == 'partial_ratio':
+            return fuzz.partial_ratio(str1, str2) / 100.0
+        if ratio_func == 'token_sort_ratio':
+            return fuzz.token_sort_ratio(str1, str2) / 100.0
+        if ratio_func == 'token_set_ratio':
+            return fuzz.token_set_ratio(str1, str2) / 100.0

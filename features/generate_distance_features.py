@@ -36,6 +36,27 @@ def generate_levenshtein_distance(df):
         axis=1
     )
 
+def generate_fuzzy_matching_ratio(df, question='question'):
+    df['q_fuzzy_matching_ratio'] = df.apply(
+        lambda row: DistanceUtil.fuzzy_matching_ratio(str(row[question+'1']), str(row[question+'2']),
+                                                      ratio_func='ratio'),
+        axis=1
+    )
+    df['q_fuzzy_matching_partial_ratio'] = df.apply(
+        lambda row: DistanceUtil.fuzzy_matching_ratio(str(row[question+'1']), str(row[question+'2']),
+                                                      ratio_func='partial_ratio'),
+        axis=1
+    )
+    df['q_fuzzy_matching_token_sort_ratio'] = df.apply(
+        lambda row: DistanceUtil.fuzzy_matching_ratio(str(row[question+'1']), str(row[question+'2']),
+                                                      ratio_func='token_sort_ratio'),
+        axis=1
+    )
+    df['q_fuzzy_matching_token_set_ratio'] = df.apply(
+        lambda row: DistanceUtil.fuzzy_matching_ratio(str(row[question+'1']), str(row[question+'2']),
+                                                      ratio_func='token_set_ratio'),
+        axis=1
+    )
 
 def main(base_data_dir):
     op_scope = 3
@@ -55,6 +76,11 @@ def main(base_data_dir):
     generate_count_based_cos_distance(test)
     generate_levenshtein_distance(train)
     generate_levenshtein_distance(test)
+    print('---> generate fuzzy matching ratio')
+    generate_fuzzy_matching_ratio(train)
+    generate_fuzzy_matching_ratio(test)
+    generate_fuzzy_matching_ratio(train, question='cleaned_question')
+    generate_fuzzy_matching_ratio(test, question='cleaned_question')
 
     print("train: {}, test: {}".format(train.shape, test.shape))
     print("---> save datasets")
