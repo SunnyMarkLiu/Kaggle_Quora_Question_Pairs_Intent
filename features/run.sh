@@ -8,3 +8,4 @@ base_data_dir=$1
 python preprocess_cleaning.py -d ${base_data_dir}
 python generate_statistic_features.py -d ${base_data_dir}
 python generate_statistic_features2.py -d ${base_data_dir}
+python generate_distance_features.py -d ${base_data_dir}

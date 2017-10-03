@@ -106,8 +106,8 @@ def generate_char_count(df):
 
 def main(base_data_dir):
     op_scope = 2
-    # if os.path.exists(Configure.processed_train_path.format(base_data_dir, op_scope + 1)):
-    #     return
+    if os.path.exists(Configure.processed_train_path.format(base_data_dir, op_scope + 1)):
+        return
 
     print("---> load datasets from scope {}".format(op_scope))
     train, test = data_utils.load_dataset(base_data_dir, op_scope)
