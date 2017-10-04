@@ -14,7 +14,7 @@ module_path = os.path.abspath(os.path.join('..'))
 sys.path.append(module_path)
 
 import numpy as np
-from utils import data_utils
+from utils import data_utils, jobs
 from conf.configure import Configure
 from optparse import OptionParser
 
@@ -59,6 +59,8 @@ def generate_symbol_count(df):
 
     df['q1_math_count'] = df['question1'].map(lambda x: str(x).count('math'))
     df['q2_math_count'] = df['question2'].map(lambda x: str(x).count('math'))
+    return df
+
 
 def generate_char_count(df):
     """
@@ -103,6 +105,8 @@ def generate_char_count(df):
         df['char_{}_count'.format(s[i])] = df['char_count_diff'].map(lambda x: x[i])
 
     df.drop(['char_counts', 'q1_char_count', 'q2_char_count', 'char_count_diff'], axis=1, inplace=True)
+    return df
+
 
 def main(base_data_dir):
     op_scope = 2
@@ -114,16 +118,16 @@ def main(base_data_dir):
     print("train: {}, test: {}".format(train.shape, test.shape))
 
     print('---> generate question introducer word features')
-    train = generate_question_introducer_word_features(train)
-    test = generate_question_introducer_word_features(test)
+    train = jobs.parallelize_dataframe(train, generate_question_introducer_word_features)
+    test = jobs.parallelize_dataframe(test, generate_question_introducer_word_features)
 
     print('---> generate symbol features')
-    generate_symbol_count(train)
-    generate_symbol_count(test)
+    train = jobs.parallelize_dataframe(train, generate_symbol_count)
+    test = jobs.parallelize_dataframe(test, generate_symbol_count)
 
     print('---> generate char count features')
-    generate_char_count(train)
-    generate_char_count(test)
+    train = jobs.parallelize_dataframe(train, generate_char_count)
+    test = jobs.parallelize_dataframe(test, generate_char_count)
 
     print("train: {}, test: {}".format(train.shape, test.shape))
     print("---> save datasets")

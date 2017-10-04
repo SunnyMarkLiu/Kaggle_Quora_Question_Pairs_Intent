@@ -14,7 +14,7 @@ module_path = os.path.abspath(os.path.join('..'))
 sys.path.append(module_path)
 import numpy as np
 import pandas as pd
-from utils import data_utils
+from utils import data_utils, jobs
 from conf.configure import Configure
 from optparse import OptionParser
 
@@ -26,6 +26,7 @@ def generate_common_word_count(df):
     df['cq1_cq2_common_word_count'] = df.apply(lambda row: len(
         set(str(row['cleaned_question1'])).intersection(set(str(row['cleaned_question2'])))
     ), axis=1)
+    return df
 
 
 def main(base_data_dir):
@@ -38,8 +39,8 @@ def main(base_data_dir):
     print("train: {}, test: {}".format(train.shape, test.shape))
 
     print('---> generate common word count')
-    generate_common_word_count(train)
-    generate_common_word_count(test)
+    train = jobs.parallelize_dataframe(train, generate_common_word_count)
+    test = jobs.parallelize_dataframe(test, generate_common_word_count)
 
     print("train: {}, test: {}".format(train.shape, test.shape))
     print("---> save datasets")

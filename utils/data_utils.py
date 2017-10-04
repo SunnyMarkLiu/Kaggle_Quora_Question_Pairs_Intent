@@ -13,7 +13,6 @@ sys.path.append(module_path)
 
 import numpy as np
 import pandas as pd
-import cPickle
 from conf.configure import Configure
 
 
@@ -22,32 +21,33 @@ def load_dataset(base_data_dir, op_scope):
     if not os.path.exists(train_path):
         train = pd.read_csv(Configure.original_train_path)
 
-        shuffled_index = np.arange(0, train.shape[0], 1)
-        np.random.shuffle(shuffled_index)
-        random_indexs = shuffled_index[:int(train.shape[0] * 0.10)]
-        train = train.iloc[random_indexs, :]
+        # shuffled_index = np.arange(0, train.shape[0], 1)
+        # np.random.shuffle(shuffled_index)
+        # random_indexs = shuffled_index[:int(train.shape[0] * 0.010)]
+        # train = train.iloc[random_indexs, :]
     else:
-        with open(train_path, "rb") as f:
-            train = cPickle.load(f)
+        train = pd.read_hdf(train_path, 'data')
 
     test_path = Configure.processed_test_path.format(base_data_dir, op_scope)
     if not os.path.exists(test_path):
         test = pd.read_csv(Configure.original_test_path)
-        shuffled_index = np.arange(0, test.shape[0], 1)
-        np.random.shuffle(shuffled_index)
-        random_indexs = shuffled_index[:int(test.shape[0] * 0.0001)]
-        test = test.iloc[random_indexs, :]
+
+        # shuffled_index = np.arange(0, test.shape[0], 1)
+        # np.random.shuffle(shuffled_index)
+        # random_indexs = shuffled_index[:int(test.shape[0] * 0.0001)]
+        # test = test.iloc[random_indexs, :]
     else:
-        with open(test_path, "rb") as f:
-            test = cPickle.load(f)
+        test = pd.read_hdf(test_path, 'data')
+
     return train, test
 
 
 def save_dataset(base_data_dir, train, test, op_scope):
+
     if train is not None:
-        with open(Configure.processed_train_path.format(base_data_dir, op_scope), "wb") as f:
-            cPickle.dump(train, f, -1)
+        train_path = Configure.processed_train_path.format(base_data_dir, op_scope)
+        train.to_hdf(train_path, 'data', append=True)
 
     if test is not None:
-        with open(Configure.processed_test_path.format(base_data_dir, op_scope), "wb") as f:
-            cPickle.dump(test, f, -1)
+        test_path = Configure.processed_test_path.format(base_data_dir, op_scope)
+        test.to_hdf(test_path, 'data', append=True)

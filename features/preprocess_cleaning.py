@@ -13,7 +13,7 @@ import sys
 module_path = os.path.abspath(os.path.join('..'))
 sys.path.append(module_path)
 
-from time import time
+import time
 import re
 from string import punctuation
 # from nltk.corpus import stopwords
@@ -23,7 +23,7 @@ from nltk.tokenize import WordPunctTokenizer
 from conf.configure import Configure
 from utils import data_utils
 from utils.text.preprocessor import TextPreProcessor
-
+from utils import jobs
 from optparse import OptionParser
 
 # english_stopwords = set(stopwords.words('english'))
@@ -208,7 +208,7 @@ def clean_text(text, remove_stop_words=True, stem_words=False):
         stemmed_words = [stemmer.stem(word) for word in text]
         text = " ".join(stemmed_words)
 
-    return text
+    return str(text)
 
 
 def generate_cleaned_unigram_words_features(df):
@@ -231,6 +231,16 @@ def generate_cleaned_unigram_words_features(df):
     return df
 
 
+def clean_text_func_no_stem_words(df):
+    df['cleaned_question1'] = df['question1'].apply(lambda x: clean_text(str(x)))
+    df['cleaned_question2'] = df['question2'].apply(lambda x: clean_text(str(x)))
+    return df
+
+def clean_text_func_stem_words(df):
+    df['cleaned_question1'] = df['question1'].apply(lambda x: clean_text(str(x), stem_words=True))
+    df['cleaned_question2'] = df['question2'].apply(lambda x: clean_text(str(x), stem_words=True))
+    return df
+
 def main(base_data_dir):
     op_scope = 0
     if os.path.exists(Configure.processed_train_path.format(base_data_dir, op_scope+1)):
@@ -251,30 +261,28 @@ def main(base_data_dir):
     test['num_of_words_q2'] = test['question2'].apply(lambda x: len(str(x).split()))
 
     print('---> generate unigram_words features before cleaned')
-    train = generate_unigram_words_features(train)
-    test = generate_unigram_words_features(test)
+    train = jobs.parallelize_dataframe(train, generate_unigram_words_features)
+    test = jobs.parallelize_dataframe(test, generate_unigram_words_features)
 
     print('---> clean text')
-    start = time()
+    start = time.clock()
     if 'no_stem_words' in base_data_dir:
-        stem_words = False
+        print('clean train question')
+        train = jobs.parallelize_dataframe(train, clean_text_func_no_stem_words)
+        print('clean test question')
+        test = jobs.parallelize_dataframe(test, clean_text_func_no_stem_words)
     else:
-        stem_words = True
+        print('clean train question')
+        train = jobs.parallelize_dataframe(train, clean_text_func_stem_words)
+        print('clean test question')
+        test = jobs.parallelize_dataframe(test, clean_text_func_stem_words)
 
-    print('clean train question1')
-    train['cleaned_question1'] = train['question1'].apply(lambda x: clean_text(str(x), stem_words=stem_words))
-    print('clean train question2')
-    train['cleaned_question2'] = train['question2'].apply(lambda x: clean_text(str(x), stem_words=stem_words))
-    print('clean test question1')
-    test['cleaned_question1'] = test['question1'].apply(lambda x: clean_text(str(x), stem_words=stem_words))
-    print('clean test question2')
-    test['cleaned_question2'] = test['question2'].apply(lambda x: clean_text(str(x), stem_words=stem_words))
-    stop = time()
+    stop = time.clock()
     print("text cleaned, cost {}s".format(stop, str(stop - start)))
 
     print('---> generate unigram_words features after cleaned')
-    train = generate_cleaned_unigram_words_features(train)
-    test = generate_cleaned_unigram_words_features(test)
+    train = jobs.parallelize_dataframe(train, generate_cleaned_unigram_words_features)
+    test = jobs.parallelize_dataframe(test, generate_cleaned_unigram_words_features)
 
     print("train: {}, test: {}".format(train.shape, test.shape))
     print("---> save datasets")

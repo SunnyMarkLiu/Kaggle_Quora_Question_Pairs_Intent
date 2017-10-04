@@ -14,7 +14,7 @@ module_path = os.path.abspath(os.path.join('..'))
 sys.path.append(module_path)
 
 import numpy as np
-from utils import data_utils
+from utils import data_utils, jobs
 from optparse import OptionParser
 from gensim.corpora import Dictionary
 from gensim.models import LdaMulticore
@@ -28,18 +28,21 @@ def generate_jaccard_similarity_distance(df):
         lambda row: DistanceUtil.jaccard_similarity_distance(df['cleaned_question1'], df['cleaned_question2']),
         axis=1
     )
+    return df
 
 def generate_count_based_cos_distance(df):
     df['q_count_cos_dis'] = df.apply(
         lambda row: DistanceUtil.countbased_cos_distance(str(row['question1']), str(row['question2'])),
         axis=1
     )
+    return df
 
 def generate_levenshtein_distance(df):
     df['q_levenshtein_dis'] = df.apply(
         lambda row: DistanceUtil.levenshtein_distance(str(row['question1']), str(row['question2'])),
         axis=1
     )
+    return df
 
 def generate_fuzzy_matching_ratio(df, question='question'):
     df['q_fuzzy_matching_ratio'] = df.apply(
@@ -62,18 +65,20 @@ def generate_fuzzy_matching_ratio(df, question='question'):
                                                       ratio_func='token_set_ratio'),
         axis=1
     )
+    return df
 
-def generate_char_ngram_distance(df, ngrams, question='question'):
+def generate_fuzzy_matching_ratio_q_wrapper(df):
+    return generate_fuzzy_matching_ratio(df, question='question')
+def generate_fuzzy_matching_ratio_cq_wrapper(df):
+    return generate_fuzzy_matching_ratio(df, question='cleaned_question')
+
+def generate_char_ngram_distance(df, ngram, question='question'):
     """
     基于 n-gram 的 char 各种距离
-    :param df: 
-    :param ngrams: list
-    :param question: 
-    :return: 
     """
     def calc_char_ngram_distance(row, n, q='question'):
-        def get_char_ngrams(doc, n):
-            return [doc[i:i + n] for i in range(len(doc) - n + 1)]
+        def get_char_ngrams(doc, _n):
+            return [doc[j:j + _n] for j in range(len(doc) - _n + 1)]
 
         q1_ngrams_chars = get_char_ngrams(str(row[q+'1']), n)
         q2_ngrams_chars = get_char_ngrams(str(row[q+'2']), n)
@@ -93,27 +98,28 @@ def generate_char_ngram_distance(df, ngrams, question='question'):
 
         return np.mean(cos_distances), np.mean(levenshtein_distances)
 
-    for ngram in ngrams:
-        df['char_ngram_distance'] = df.apply(lambda row: calc_char_ngram_distance(row, ngram, q=question), axis=1)
-        df['{}_ngram_{}_cos_distance'.format(question, ngram)] = df['char_ngram_distance'].map(lambda x: x[0])
-        df['{}_ngram_{}_levenshtein_distance'.format(question, ngram)] = df['char_ngram_distance'].map(lambda x: x[1])
+    df['char_ngram_distance'] = df.apply(lambda row: calc_char_ngram_distance(row, ngram, q=question), axis=1)
+    df['{}_ngram_{}_cos_distance'.format(question, ngram)] = df['char_ngram_distance'].map(lambda x: x[0])
+    df['{}_ngram_{}_levenshtein_distance'.format(question, ngram)] = df['char_ngram_distance'].map(lambda x: x[1])
+
     df.drop(['char_ngram_distance'], axis=1, inplace=True)
 
     return df
 
 
-def generate_word_ngram_distance(df, ngrams, question='question'):
+def generate_char_ngram_distance_q_wrapper(df):
+    return generate_char_ngram_distance(df, 10, 'question')
+def generate_char_ngram_distance_cq_wrapper(df):
+    return generate_char_ngram_distance(df, 10, 'cleaned_question')
+
+def generate_word_ngram_distance(df, ngram, question='question'):
     """
     基于 n-gram 的 word 各种距离
-    :param df: 
-    :param ngrams: list
-    :param question: 
-    :return: 
     """
     def calc_word_ngram_distance(row, n, q='question'):
-        def get_words_ngrams(doc, n):
+        def get_words_ngrams(doc, _n):
             doc = doc.split()
-            return [doc[i:i + n] for i in range(len(doc) - n + 1)]
+            return [doc[j:j + _n] for j in range(len(doc) - _n + 1)]
 
         q1_ngrams_words = get_words_ngrams(str(row[q + '1']), n)
         q2_ngrams_words = get_words_ngrams(str(row[q + '2']), n)
@@ -133,14 +139,18 @@ def generate_word_ngram_distance(df, ngrams, question='question'):
 
         return np.mean(cos_distances), np.mean(levenshtein_distances)
 
-    for ngram in ngrams:
-        df['word_ngram_distance'] = df.apply(lambda row: calc_word_ngram_distance(row, ngram, q=question), axis=1)
-        df['{}_ngram_{}_word_cos_distance'.format(question, ngram)] = df['word_ngram_distance'].map(lambda x: x[0])
-        df['{}_ngram_{}_word_levenshtein_distance'.format(question, ngram)] = df['word_ngram_distance'].map(lambda x: x[1])
+    df['word_ngram_distance'] = df.apply(lambda row: calc_word_ngram_distance(row, ngram, q=question), axis=1)
+    df['{}_ngram_{}_word_cos_distance'.format(question, ngram)] = df['word_ngram_distance'].map(lambda x: x[0])
+    df['{}_ngram_{}_word_levenshtein_distance'.format(question, ngram)] = df['word_ngram_distance'].map(lambda x: x[1])
+
     df.drop(['word_ngram_distance'], axis=1, inplace=True)
 
     return df
 
+def generate_word_ngram_distance_q_wrapper(df):
+    return generate_word_ngram_distance(df, 4, 'question')
+def generate_word_ngram_distance_cq_wrapper(df):
+    return generate_word_ngram_distance(df, 4, 'cleaned_question')
 
 def generate_lda_distance(train, test):
     """
@@ -201,24 +211,26 @@ def main(base_data_dir):
     # generate_jaccard_similarity_distance(test)
 
     print('---> generate count-based cos-distance, levenshtein_distance')
-    generate_count_based_cos_distance(train)
-    generate_count_based_cos_distance(test)
-    generate_levenshtein_distance(train)
-    generate_levenshtein_distance(test)
+    train = jobs.parallelize_dataframe(train, generate_count_based_cos_distance)
+    test = jobs.parallelize_dataframe(test, generate_count_based_cos_distance)
+
+    train = jobs.parallelize_dataframe(train, generate_levenshtein_distance)
+    test = jobs.parallelize_dataframe(test, generate_levenshtein_distance)
 
     print('---> generate fuzzy matching ratio')
-    generate_fuzzy_matching_ratio(train)
-    generate_fuzzy_matching_ratio(test)
-    generate_fuzzy_matching_ratio(train, question='cleaned_question')
-    generate_fuzzy_matching_ratio(test, question='cleaned_question')
+    train = jobs.parallelize_dataframe(train, generate_fuzzy_matching_ratio_q_wrapper)
+    test = jobs.parallelize_dataframe(test, generate_fuzzy_matching_ratio_q_wrapper)
+
+    train = jobs.parallelize_dataframe(train, generate_fuzzy_matching_ratio_cq_wrapper)
+    test = jobs.parallelize_dataframe(test, generate_fuzzy_matching_ratio_cq_wrapper)
 
     print('---> generate char ngram distance')
-    train = generate_char_ngram_distance(train, ngrams=[10],question='question')
-    test = generate_char_ngram_distance(test, ngrams=[10], question='question')
+    train = jobs.parallelize_dataframe(train, generate_char_ngram_distance_q_wrapper)
+    test = jobs.parallelize_dataframe(test, generate_char_ngram_distance_q_wrapper)
 
     print('---> generate word ngram distance')
-    train = generate_word_ngram_distance(train, ngrams=[4],question='question')
-    test = generate_word_ngram_distance(test, ngrams=[4], question='question')
+    train = jobs.parallelize_dataframe(train, generate_word_ngram_distance_q_wrapper)
+    test = jobs.parallelize_dataframe(test, generate_word_ngram_distance_q_wrapper)
 
     print('---> generate lda topic model distance')
     train, test = generate_lda_distance(train, test)

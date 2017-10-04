@@ -17,6 +17,7 @@ import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer, HashingVectorizer
 from utils import data_utils
+from utils import jobs
 from conf.configure import Configure
 from optparse import OptionParser
 
@@ -32,6 +33,7 @@ def generate_contain_word_features(df, word):
     df[word + "_cq1_cq2_one_gt_0"] = df.apply(lambda raw: int((raw[word + "_count_cq1"] > 0) | (raw[word + "_count_cq2"] > 0)), axis=1)
     df[word + "_cq1_cq2_diff"] = df.apply(lambda raw: int(((raw[word + "_count_cq1"] > 0) & (raw[word + "_count_cq2"] <= 0)) |
                                                       ((raw[word + "_count_cq1"] <= 0) & (raw[word + "_count_cq2"] > 0))), axis=1)
+    return df
 
 
 def generate_matchshared_words_features(row, question):
@@ -164,6 +166,12 @@ def generate_question_occur_count(train, test):
     return train, test
 
 
+def generate_contain_word_features_not_wrapper(df):
+    return generate_contain_word_features(df, 'not')
+def generate_contain_word_features_best_wrapper(df):
+    return generate_contain_word_features(df, 'best')
+
+
 def main(base_data_dir):
     op_scope = 1
     if os.path.exists(Configure.processed_train_path.format(base_data_dir, op_scope + 1)):
@@ -174,10 +182,10 @@ def main(base_data_dir):
     print("train: {}, test: {}".format(train.shape, test.shape))
 
     print('---> generate contain word count features')
-    generate_contain_word_features(train, 'not')
-    generate_contain_word_features(test, 'not')
-    generate_contain_word_features(train, 'best')
-    generate_contain_word_features(test, 'best')
+    train = jobs.parallelize_dataframe(train, generate_contain_word_features_not_wrapper)
+    test = jobs.parallelize_dataframe(test, generate_contain_word_features_not_wrapper)
+    train = jobs.parallelize_dataframe(train, generate_contain_word_features_best_wrapper)
+    test = jobs.parallelize_dataframe(test, generate_contain_word_features_best_wrapper)
 
     print('---> generate match shared words features')
     train['q_match_shared_words'] = train.apply(lambda x: generate_matchshared_words_features(x, "question"), axis=1)
