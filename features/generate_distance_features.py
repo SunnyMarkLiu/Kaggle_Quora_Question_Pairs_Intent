@@ -16,7 +16,9 @@ sys.path.append(module_path)
 import numpy as np
 from utils import data_utils
 from optparse import OptionParser
-
+from gensim.corpora import Dictionary
+from gensim.models import LdaMulticore
+from sklearn.metrics.pairwise import cosine_distances, euclidean_distances
 from utils.distance_utils import DistanceUtil
 
 def generate_jaccard_similarity_distance(df):
@@ -138,6 +140,51 @@ def generate_word_ngram_distance(df, ngrams, question='question'):
     return df
 
 
+def generate_lda_distance(train, test):
+    """
+    计算 LDA 主题模型距离
+    """
+    documents = train['cleaned_question1'].values.tolist() + train['cleaned_question2'].values.tolist() + \
+                test['cleaned_question1'].values.tolist() + test['cleaned_question2'].values.tolist()
+    documents = [document.split() for document in documents]
+
+    documents = list(np.array(documents).ravel())
+    dictionary = Dictionary(documents)
+    corpus = [dictionary.doc2bow(document) for document in documents]
+
+    NUM_TOPICS = 300
+    RANDOM_SEED = 42
+    model = LdaMulticore(
+        corpus,
+        num_topics=NUM_TOPICS,
+        id2word=dictionary,
+        random_state=RANDOM_SEED,
+    )
+
+    def compute_topic_distances(row):
+        q1_bow = dictionary.doc2bow(row['cleaned_question1'].split())
+        q2_bow = dictionary.doc2bow(row['cleaned_question2'].split())
+
+        q1_topic_vec = np.array(model.get_document_topics(q1_bow, minimum_probability=0))[:, 1].reshape(1, -1)
+        q2_topic_vec = np.array(model.get_document_topics(q2_bow, minimum_probability=0))[:, 1].reshape(1, -1)
+
+        return cosine_distances(q1_topic_vec, q2_topic_vec)[0][0],\
+            euclidean_distances(q1_topic_vec, q2_topic_vec)[0][0]
+
+    train['topic_distances'] = train.apply(lambda row: compute_topic_distances(row), axis=1)
+    train['lad_cosine_distances'] = train['topic_distances'].map(lambda x: x[0])
+    train['lad_euclidean_distances'] = train['topic_distances'].map(lambda x: x[1])
+
+    test['topic_distances'] = test.apply(lambda row: compute_topic_distances(row), axis=1)
+    test['lad_cosine_distances'] = test['topic_distances'].map(lambda x: x[0])
+    test['lad_euclidean_distances'] = test['topic_distances'].map(lambda x: x[1])
+
+    del train['topic_distances']
+    del test['topic_distances']
+
+    return train, test
+
+
 def main(base_data_dir):
     op_scope = 3
     # if os.path.exists(Configure.processed_train_path.format(base_data_dir, op_scope + 1)):
@@ -170,6 +217,9 @@ def main(base_data_dir):
     print('---> generate word ngram distance')
     train = generate_word_ngram_distance(train, ngrams=[4],question='question')
     test = generate_word_ngram_distance(test, ngrams=[4], question='question')
+
+    print('---> generate lda topic model distance')
+    train, test = generate_lda_distance(train, test)
 
     print("train: {}, test: {}".format(train.shape, test.shape))
     print("---> save datasets")
