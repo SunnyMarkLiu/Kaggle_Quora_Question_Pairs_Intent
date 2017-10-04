@@ -19,7 +19,9 @@ from optparse import OptionParser
 from gensim.corpora import Dictionary
 from gensim.models import LdaMulticore
 from sklearn.metrics.pairwise import cosine_distances, euclidean_distances
+from conf.configure import Configure
 from utils.distance_utils import DistanceUtil
+
 
 def generate_jaccard_similarity_distance(df):
     df['cq_jaccard_dist'] = df[['cleaned_question1', 'cleaned_question2']].apply(
@@ -187,14 +189,14 @@ def generate_lda_distance(train, test):
 
 def main(base_data_dir):
     op_scope = 3
-    # if os.path.exists(Configure.processed_train_path.format(base_data_dir, op_scope + 1)):
-    #     return
+    if os.path.exists(Configure.processed_train_path.format(base_data_dir, op_scope + 1)):
+        return
 
     print("---> load datasets from scope {}".format(op_scope))
     train, test = data_utils.load_dataset(base_data_dir, op_scope)
     print("train: {}, test: {}".format(train.shape, test.shape))
 
-    # print('---> generate jaccard similarity distance')
+    # print('---> generate jaccard similarity distance') bad!
     # generate_jaccard_similarity_distance(train)
     # generate_jaccard_similarity_distance(test)
 
