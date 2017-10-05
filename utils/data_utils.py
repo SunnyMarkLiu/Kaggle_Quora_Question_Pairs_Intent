@@ -23,7 +23,7 @@ def load_dataset(base_data_dir, op_scope):
 
         shuffled_index = np.arange(0, train.shape[0], 1)
         np.random.shuffle(shuffled_index)
-        random_indexs = shuffled_index[:int(train.shape[0] * 0.1)]
+        random_indexs = shuffled_index[:int(train.shape[0] * 0.2)]
         train = train.iloc[random_indexs, :]
     else:
         train = pd.read_hdf(train_path, 'data')
@@ -34,7 +34,7 @@ def load_dataset(base_data_dir, op_scope):
 
         shuffled_index = np.arange(0, test.shape[0], 1)
         np.random.shuffle(shuffled_index)
-        random_indexs = shuffled_index[:int(test.shape[0] * 0.0001)]
+        random_indexs = shuffled_index[:int(test.shape[0] * 0.00001)]
         test = test.iloc[random_indexs, :]
     else:
         test = pd.read_hdf(test_path, 'data')
