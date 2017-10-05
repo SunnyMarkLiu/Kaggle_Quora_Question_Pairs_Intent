@@ -6,7 +6,7 @@
 # -> full_data_perform_stem_words
 # -> full_data_perform_no_stem_words
 
-base_data_dir='perform_stem_words'
+base_data_dir='full_data_perform_stem_words'
 echo "==> base_data_dir:" ${base_data_dir}
 
 cd features

@@ -23,3 +23,5 @@ class Configure(object):
     processed_test_path = '../input/{}/operate_{}_test.h5'
 
     submission_path = '../result/submission_{}.csv.gz'.format(time.strftime('%Y_%m_%d_%H_%M_%S', time.localtime(time.time())))
+
+    wordvector_dims = 300

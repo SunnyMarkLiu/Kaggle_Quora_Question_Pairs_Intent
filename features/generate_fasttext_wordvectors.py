@@ -48,5 +48,5 @@ if __name__ == "__main__":
     )
 
     options, _ = parser.parse_args()
-    print("========== generate some distance features ==========")
+    print("========== generate word vector features ==========")
     main(options.base_data_dir)

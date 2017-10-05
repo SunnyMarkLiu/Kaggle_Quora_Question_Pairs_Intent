@@ -152,10 +152,8 @@ def generate_word_ngram_distance_q_wrapper(df):
 def generate_word_ngram_distance_cq_wrapper(df):
     return generate_word_ngram_distance(df, 4, 'cleaned_question')
 
-def generate_lda_distance(train, test):
-    """
-    计算 LDA 主题模型距离
-    """
+
+def create_lda_model(train, test):
     documents = train['cleaned_question1'].values.tolist() + train['cleaned_question2'].values.tolist() + \
                 test['cleaned_question1'].values.tolist() + test['cleaned_question2'].values.tolist()
     documents = [str(document).split() for document in documents]
@@ -166,6 +164,7 @@ def generate_lda_distance(train, test):
 
     NUM_TOPICS = 300
     RANDOM_SEED = 42
+    print('create lda model...')
     model = LdaMulticore(
         corpus,
         num_topics=NUM_TOPICS,
@@ -174,6 +173,14 @@ def generate_lda_distance(train, test):
     )
 
     print('lda model created')
+
+    return model, dictionary
+
+
+def generate_lda_distance(df, model, dictionary):
+    """
+    计算 LDA 主题模型距离
+    """
     def compute_topic_distances(row):
         q1_bow = dictionary.doc2bow(row['cleaned_question1'].split())
         q2_bow = dictionary.doc2bow(row['cleaned_question2'].split())
@@ -184,77 +191,74 @@ def generate_lda_distance(train, test):
         return cosine_distances(q1_topic_vec, q2_topic_vec)[0][0],\
             euclidean_distances(q1_topic_vec, q2_topic_vec)[0][0]
 
-    train['topic_distances'] = train.apply(lambda row: compute_topic_distances(row), axis=1)
-    train['lad_cosine_distances'] = train['topic_distances'].map(lambda x: x[0])
-    train['lad_euclidean_distances'] = train['topic_distances'].map(lambda x: x[1])
+    df['topic_distances'] = df.apply(lambda row: compute_topic_distances(row), axis=1)
+    df['lad_cosine_distances'] = df['topic_distances'].map(lambda x: x[0])
+    df['lad_euclidean_distances'] = df['topic_distances'].map(lambda x: x[1])
+    del df['topic_distances']
 
-    test['topic_distances'] = test.apply(lambda row: compute_topic_distances(row), axis=1)
-    test['lad_cosine_distances'] = test['topic_distances'].map(lambda x: x[0])
-    test['lad_euclidean_distances'] = test['topic_distances'].map(lambda x: x[1])
+    return df
 
-    del train['topic_distances']
-    del test['topic_distances']
+parser = OptionParser()
 
-    return train, test
+parser.add_option(
+    "-d", "--base_data_dir",
+    dest="base_data_dir",
+    default="perform_stem_words",
+    help="""base dataset dir: 
+                perform_stem_words, 
+                perform_no_stem_words,
+                full_data_perform_stem_words,
+                full_data_perform_no_stem_words"""
+)
 
+options, _ = parser.parse_args()
+print("========== generate some distance features ==========")
+base_data_dir = options.base_data_dir
 
-def main(base_data_dir):
-    op_scope = 3
-    if os.path.exists(Configure.processed_train_path.format(base_data_dir, op_scope + 1)):
-        return
+op_scope = 3
+if os.path.exists(Configure.processed_train_path.format(base_data_dir, op_scope + 1)):
+    exit()
 
-    print("---> load datasets from scope {}".format(op_scope))
-    train, test = data_utils.load_dataset(base_data_dir, op_scope)
-    print("train: {}, test: {}".format(train.shape, test.shape))
+print("---> load datasets from scope {}".format(op_scope))
+train, test = data_utils.load_dataset(base_data_dir, op_scope)
+print("train: {}, test: {}".format(train.shape, test.shape))
 
-    # print('---> generate jaccard similarity distance') bad!
-    # generate_jaccard_similarity_distance(train)
-    # generate_jaccard_similarity_distance(test)
+# print('---> generate jaccard similarity distance') bad!
+# generate_jaccard_similarity_distance(train)
+# generate_jaccard_similarity_distance(test)
 
-    print('---> generate count-based cos-distance')
-    train = jobs.parallelize_dataframe(train, generate_count_based_cos_distance)
-    test = jobs.parallelize_dataframe(test, generate_count_based_cos_distance)
-    print('---> generate levenshtein_distance')
-    train = jobs.parallelize_dataframe(train, generate_levenshtein_distance)
-    test = jobs.parallelize_dataframe(test, generate_levenshtein_distance)
+print('---> generate count-based cos-distance')
+train = jobs.parallelize_dataframe(train, generate_count_based_cos_distance)
+test = jobs.parallelize_dataframe(test, generate_count_based_cos_distance)
+print('---> generate levenshtein_distance')
+train = jobs.parallelize_dataframe(train, generate_levenshtein_distance)
+test = jobs.parallelize_dataframe(test, generate_levenshtein_distance)
 
-    print('---> generate fuzzy matching ratio')
-    train = jobs.parallelize_dataframe(train, generate_fuzzy_matching_ratio_q_wrapper)
-    test = jobs.parallelize_dataframe(test, generate_fuzzy_matching_ratio_q_wrapper)
+print('---> generate fuzzy matching ratio')
+train = jobs.parallelize_dataframe(train, generate_fuzzy_matching_ratio_q_wrapper)
+test = jobs.parallelize_dataframe(test, generate_fuzzy_matching_ratio_q_wrapper)
 
-    train = jobs.parallelize_dataframe(train, generate_fuzzy_matching_ratio_cq_wrapper)
-    test = jobs.parallelize_dataframe(test, generate_fuzzy_matching_ratio_cq_wrapper)
+train = jobs.parallelize_dataframe(train, generate_fuzzy_matching_ratio_cq_wrapper)
+test = jobs.parallelize_dataframe(test, generate_fuzzy_matching_ratio_cq_wrapper)
 
-    print('---> generate char ngram distance')
-    train = jobs.parallelize_dataframe(train, generate_char_ngram_distance_q_wrapper)
-    test = jobs.parallelize_dataframe(test, generate_char_ngram_distance_q_wrapper)
+print('---> generate char ngram distance')
+train = jobs.parallelize_dataframe(train, generate_char_ngram_distance_q_wrapper)
+test = jobs.parallelize_dataframe(test, generate_char_ngram_distance_q_wrapper)
 
-    print('---> generate word ngram distance')
-    train = jobs.parallelize_dataframe(train, generate_word_ngram_distance_q_wrapper)
-    test = jobs.parallelize_dataframe(test, generate_word_ngram_distance_q_wrapper)
+print('---> generate word ngram distance')
+train = jobs.parallelize_dataframe(train, generate_word_ngram_distance_q_wrapper)
+test = jobs.parallelize_dataframe(test, generate_word_ngram_distance_q_wrapper)
 
-    print('---> generate lda topic model distance')
-    train, test = generate_lda_distance(train, test)
+print('---> generate lda topic model distance')
+model, dictionary = create_lda_model(train, test) # very slow!!
 
-    print("train: {}, test: {}".format(train.shape, test.shape))
-    print("---> save datasets")
-    data_utils.save_dataset(base_data_dir, train, test, op_scope + 1)
+def generate_lda_distance_wrapper(df):
+    return generate_lda_distance(df, model, dictionary)
 
+print('create lda distance features')
+train = jobs.parallelize_dataframe(train, generate_lda_distance_wrapper)
+test = jobs.parallelize_dataframe(test, generate_lda_distance_wrapper)
 
-if __name__ == "__main__":
-    parser = OptionParser()
-
-    parser.add_option(
-        "-d", "--base_data_dir",
-        dest="base_data_dir",
-        default="perform_stem_words",
-        help="""base dataset dir: 
-                    perform_stem_words, 
-                    perform_no_stem_words,
-                    full_data_perform_stem_words,
-                    full_data_perform_no_stem_words"""
-    )
-
-    options, _ = parser.parse_args()
-    print("========== generate some distance features ==========")
-    main(options.base_data_dir)
+print("train: {}, test: {}".format(train.shape, test.shape))
+print("---> save datasets")
+data_utils.save_dataset(base_data_dir, train, test, op_scope + 1)
