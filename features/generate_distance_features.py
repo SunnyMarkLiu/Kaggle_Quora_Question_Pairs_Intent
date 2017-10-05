@@ -173,6 +173,7 @@ def generate_lda_distance(train, test):
         random_state=RANDOM_SEED,
     )
 
+    print('lda model created')
     def compute_topic_distances(row):
         q1_bow = dictionary.doc2bow(row['cleaned_question1'].split())
         q2_bow = dictionary.doc2bow(row['cleaned_question2'].split())

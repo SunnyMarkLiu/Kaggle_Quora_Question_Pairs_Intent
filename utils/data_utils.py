@@ -21,10 +21,10 @@ def load_dataset(base_data_dir, op_scope):
     if not os.path.exists(train_path):
         train = pd.read_csv(Configure.original_train_path)
 
-        # shuffled_index = np.arange(0, train.shape[0], 1)
-        # np.random.shuffle(shuffled_index)
-        # random_indexs = shuffled_index[:int(train.shape[0] * 0.010)]
-        # train = train.iloc[random_indexs, :]
+        shuffled_index = np.arange(0, train.shape[0], 1)
+        np.random.shuffle(shuffled_index)
+        random_indexs = shuffled_index[:int(train.shape[0] * 0.1)]
+        train = train.iloc[random_indexs, :]
     else:
         train = pd.read_hdf(train_path, 'data')
 
@@ -32,10 +32,10 @@ def load_dataset(base_data_dir, op_scope):
     if not os.path.exists(test_path):
         test = pd.read_csv(Configure.original_test_path)
 
-        # shuffled_index = np.arange(0, test.shape[0], 1)
-        # np.random.shuffle(shuffled_index)
-        # random_indexs = shuffled_index[:int(test.shape[0] * 0.0001)]
-        # test = test.iloc[random_indexs, :]
+        shuffled_index = np.arange(0, test.shape[0], 1)
+        np.random.shuffle(shuffled_index)
+        random_indexs = shuffled_index[:int(test.shape[0] * 0.0001)]
+        test = test.iloc[random_indexs, :]
     else:
         test = pd.read_hdf(test_path, 'data')
 
