@@ -158,7 +158,7 @@ def generate_lda_distance(train, test):
     """
     documents = train['cleaned_question1'].values.tolist() + train['cleaned_question2'].values.tolist() + \
                 test['cleaned_question1'].values.tolist() + test['cleaned_question2'].values.tolist()
-    documents = [document.split() for document in documents]
+    documents = [str(document).split() for document in documents]
 
     documents = list(np.array(documents).ravel())
     dictionary = Dictionary(documents)
@@ -210,10 +210,10 @@ def main(base_data_dir):
     # generate_jaccard_similarity_distance(train)
     # generate_jaccard_similarity_distance(test)
 
-    print('---> generate count-based cos-distance, levenshtein_distance')
+    print('---> generate count-based cos-distance')
     train = jobs.parallelize_dataframe(train, generate_count_based_cos_distance)
     test = jobs.parallelize_dataframe(test, generate_count_based_cos_distance)
-
+    print('---> generate levenshtein_distance')
     train = jobs.parallelize_dataframe(train, generate_levenshtein_distance)
     test = jobs.parallelize_dataframe(test, generate_levenshtein_distance)
 
