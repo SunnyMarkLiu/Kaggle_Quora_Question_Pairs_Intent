@@ -27,7 +27,7 @@ from utils import data_utils
 
 def main(base_data_dir):
     # final operate dataset
-    files = os.listdir('../input/' + base_data_dir)
+    files = os.listdir('/d_2t/lq/kaggle/Kaggle_Quora_Question_Pairs_Intent/input/' + base_data_dir)
     op_scope = 0
     for f in files:
         if 'operate' in f:
@@ -72,7 +72,7 @@ def main(base_data_dir):
         'objective': 'binary:logistic',
         'eval_metric': 'logloss',
         'updater': 'grow_gpu',
-        'gpu_id': 2,
+        'gpu_id': 1,
         'nthread': -1,
         'silent': 1
     }
